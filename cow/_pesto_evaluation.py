@@ -2,7 +2,8 @@
 https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function
 https://www.chessprogramming.org/Tapered_Eval
 """
-from chess import Board, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, WHITE, BLACK, scan_reversed
+from chess import Board, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, WHITE, BLACK
+from ._helper import scan_reversed_new
 
 MG_PIECE_VALUES = [82, 337, 365, 477, 1025, 24000]  # pawn, knight, bishop, rook, queen, king
 EG_PIECE_VALUES = [94, 281, 297, 512, 936, 24000]  # pawn, knight, bishop, rook, queen, king
@@ -125,11 +126,11 @@ TOTAL_PHASE = (PHASE_VALUES[PAWN - 1] * 16 + PHASE_VALUES[KNIGHT - 1] * 4 +
 def calculate_score(board: Board) -> float:
     """Trả về điểm số trạng thái hiện tại của bàn cờ."""
     mg_score, eg_score = 0, 0
-    for square in scan_reversed(board.occupied_co[WHITE]):
+    for square in scan_reversed_new(board.occupied_co[WHITE]):
         piece_type = board.piece_type_at(square) - 1
         mg_score += MG_PESTO[piece_type][square ^ 56] + MG_PIECE_VALUES[piece_type]
         eg_score += EG_PESTO[piece_type][square ^ 56] + EG_PIECE_VALUES[piece_type]
-    for square in scan_reversed(board.occupied_co[BLACK]):
+    for square in scan_reversed_new(board.occupied_co[BLACK]):
         piece_type = board.piece_type_at(square) - 1
         mg_score -= MG_PESTO[piece_type][square] + MG_PIECE_VALUES[piece_type]
         eg_score -= EG_PESTO[piece_type][square] + EG_PIECE_VALUES[piece_type]
@@ -140,6 +141,6 @@ def calculate_score(board: Board) -> float:
 
 def get_phase(board: Board) -> float:
     """Trả về giai đoạn của trò chơi. """
-    phase = TOTAL_PHASE - sum(PHASE_VALUES[board.piece_type_at(square) - 1] for square in scan_reversed(board.occupied))
+    phase = TOTAL_PHASE - sum(PHASE_VALUES[board.piece_type_at(square) - 1] for square in scan_reversed_new(board.occupied))
     return (phase * 256 + (TOTAL_PHASE / 2)) / TOTAL_PHASE
 
