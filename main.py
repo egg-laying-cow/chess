@@ -17,7 +17,6 @@ team = [-1, -1]
 screen = pygame.display.set_mode(window_size)
 main_start_screen = start_screen(window_size)
 def draw_start_screen(screen):
-    #screen.blit(background, (0, 0))
     screen.fill('white')
     main_start_screen.draw_screen(screen)
     pygame.display.update()

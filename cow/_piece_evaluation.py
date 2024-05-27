@@ -61,9 +61,9 @@ PIECES = [PAWN_TABLE, KNIGHT_TABLE, BISHOP_TABLE, ROOK_TABLE, QUEEN_TABLE, KING_
 
 def get_move_static_score(board: Board, move: Move) -> int:
     """
-    Trả về điểm số tĩnh của nước đi.
+    Trả về điểm số tĩnh của nước đi (chỉ được sử dụng để sắp xếp nước đi).
     
-    Điểm số này được sử dụng để sắp xếp nước đi.
+    static_score = to_square - from_square (có từng bảng riêng cho từng loại quân cờ)
     """
     piece = board.piece_at(move.from_square)
     if piece.color:

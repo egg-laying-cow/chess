@@ -1,5 +1,5 @@
 from chess import Board, Move, scan_reversed
-from chess.polyglot import open_reader, zobrist_hash
+from chess.polyglot import open_reader
 from ._heuristic import END_GAME_SCORE, is_null_ok, organize_moves, organize_moves_quiescence, score
 
 OPENING_BOOK = open_reader("cow/data/opening_book/3210elo.bin")
@@ -53,7 +53,7 @@ def minimax(board : Board, depth: int, cache: dict, is_end_game: bool, alpha: fl
     if board.is_repetition(3): return None, 0
 
     # Transposition table
-    cache_key = (zobrist_hash(board), (depth if depth >= 0 else 0), alpha, beta, turn)
+    cache_key = (board._transposition_key(), (depth if depth >= 0 else 0), alpha, beta, turn)
     if cache_key in cache: return cache[cache_key]
 
     # Trường hợp cơ sở.
@@ -79,7 +79,7 @@ def minimax(board : Board, depth: int, cache: dict, is_end_game: bool, alpha: fl
                 if eval <= alpha: return None, alpha
 
     # Tạo nước đi hợp lệ.
-    legal_moves = organize_moves(board, is_end_game)
+    legal_moves = organize_moves(board)
     
     # Tìm kiếm minimax
     if turn == 1:
