@@ -1,7 +1,7 @@
 """
 https://www.chessprogramming.org/Simplified_Evaluation_Function
 """
-from chess import Board, Move
+from chess import Board, Move, WHITE
 
 KNIGHT_TABLE = [-50,-40,-30,-30,-30,-30,-40,-50,
                 -40,-20,  0,  0,  0,  0,-20,-40,
@@ -65,7 +65,7 @@ def get_move_static_score(board: Board, move: Move) -> int:
     
     static_score = to_square - from_square (có từng bảng riêng cho từng loại quân cờ)
     """
-    piece = board.piece_at(move.from_square)
-    if piece.color:
-        return PIECES[piece.piece_type - 1][move.to_square] - PIECES[piece.piece_type - 1][move.from_square]
-    return PIECES[piece.piece_type - 1][move.to_square ^ 56] - PIECES[piece.piece_type - 1][move.from_square ^ 56]
+    piece_type = board.piece_type_at(move.from_square) - 1
+    if board.turn == WHITE:
+        return PIECES[piece_type][move.to_square] - PIECES[piece_type][move.from_square]
+    return PIECES[piece_type][move.to_square ^ 56] - PIECES[piece_type][move.from_square ^ 56]

@@ -1,5 +1,4 @@
-from functools import lru_cache
-from chess import Board, Move, QUEEN, BLACK, WHITE, msb, scan_reversed, BB_RANK_1, BB_RANK_8
+from chess import Board, Move, QUEEN, BLACK, WHITE, BB_RANK_1, BB_RANK_8, msb, scan_reversed
 
 def generate_legal_promotion_queen_non_capture(board: Board):
     """Hàm tạo các nước đi phong hậu không ăn quân đối phương."""
@@ -28,5 +27,3 @@ def generate_legal_promotion_queen_non_capture(board: Board):
                 move = Move(from_square, to_square, QUEEN)
                 if board._is_safe(king, blockers, move):
                     yield move
-
-

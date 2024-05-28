@@ -3,7 +3,7 @@ https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function
 https://www.chessprogramming.org/Tapered_Eval
 """
 from functools import lru_cache
-from chess import Board, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, WHITE, BLACK, scan_reversed
+from chess import Board, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, WHITE, BLACK, scan_reversed
 
 PAWN_MG = [0,   0,   0,   0,   0,   0,  0,   0,
           98, 134,  61,  95,  68, 126, 34, -11,
@@ -115,6 +115,7 @@ KING_EG = [-74, -35, -18, -18, -11,  15,   4, -17,
 
 MG_PIECE_VALUES = [82, 337, 365, 477, 1025, 24000]  # pawn, knight, bishop, rook, queen, king
 EG_PIECE_VALUES = [94, 281, 297, 512, 936, 24000]  # pawn, knight, bishop, rook, queen, king
+
 MG_PESTO = [PAWN_MG, KNIGHT_MG, BISHOP_MG, ROOK_MG, QUEEN_MG, KING_MG]
 EG_PESTO = [PAWN_EG, KNIGHT_EG, BISHOP_EG, ROOK_EG, QUEEN_EG, KING_EG]
 
@@ -124,7 +125,7 @@ TOTAL_PHASE = (PHASE_VALUES[PAWN - 1] * 16 + PHASE_VALUES[KNIGHT - 1] * 4
 
 def calculate_score(board: Board) -> float:
     """
-    Trả về điểm số trạng thái hiện tại của bàn cờ.
+    Trả về điểm số trạng thái hiện tại của bàn cờ (tính cho bên vừa di chuyển).
 
     Sử dụng các bảng tính điểm midgame và endgame của PeSTO và đánh giá giảm dần (tapered evaluation) 
     để tính điểm cho trạng thái hiện tại của bàn cờ
@@ -133,8 +134,8 @@ def calculate_score(board: Board) -> float:
 
     Việc chia theo từng loại quân cờ, màu quân cờ để tính điểm rồi gộp lại giúp tăng hiệu suất tính toán.
     """
-    phase_score = TOTAL_PHASE
     mg_score, eg_score = 0, 0 
+    phase_score = TOTAL_PHASE
     piece_bitboards = [board.pawns, board.knights, board.bishops, board.rooks, board.queens, board.kings]
 
     for piece_type in range(6):
@@ -157,7 +158,7 @@ def calculate_piece_scores(piece_type, bb, color):
 
     Sử dụng lru_cache để lưu kết quả tính toán, tránh việc tính toán lại nếu đã tính trước đó.
 
-    Thống kê khi kết thục một trận đấu với độ sâu 4 nửa nước đi:
+    Thống kê khi kết thúc một trận đấu với độ sâu 4 nửa nước đi:
 
     CacheInfo(hits=11558341, misses=8267, maxsize=5000, currsize=5000)
     - hits: số lần sử dụng kết quả đã tính toán trước đó

@@ -1,5 +1,5 @@
 from itertools import chain
-from chess import Board, Move, PAWN, QUEEN, KING, BB_SQUARES, scan_reversed
+from chess import Board, Move, QUEEN, KING
 from chess.syzygy import open_tablebase
 from ._helper import generate_legal_promotion_queen_non_capture
 from ._pesto_evaluation import calculate_score
@@ -11,21 +11,19 @@ PIECE_VALUES = [10, 30, 30, 50, 90, 1000]  # pawn, knight, bishop, rook, queen, 
 
 def score(board: Board, is_end_game: bool) -> float:
     """
-    Bình thường, hàm này trả về điểm số của trạng thái hiện tại của bàn cờ.
+    Hàm này trả về điểm số của trạng thái hiện tại của bàn cờ (tính cho bên vừa di chuyển).
 
     Nếu số quân cờ trên bàn còn ít hơn 6 quân, hàm sẽ sử dụng dtz50 từ tablebase để hỗ trợ đánh giá.
     """
     if is_end_game:
         dtz = -EGTABLEBASE.get_dtz(board, 0)
         if dtz > 0: 
-            pawns = board.pawns & board.occupied_co[not board.turn]
             return (END_GAME_SCORE - dtz * 1000 
-                    - any(scan_reversed(pawns)) * END_GAME_SCORE / 10 
+                    - ((board.pawns & board.occupied_co[not board.turn]) != 0) * END_GAME_SCORE / 10 
                     + calculate_score(board) / 10)           
         if dtz < 0: 
-            pawns = board.pawns & board.occupied_co[board.turn]
             return (-END_GAME_SCORE - dtz * 1000 
-                    + any(scan_reversed(pawns)) * END_GAME_SCORE / 10 
+                    + ((board.pawns & board.occupied_co[board.turn]) != 0) * END_GAME_SCORE / 10 
                     + calculate_score(board) / 10)
     return calculate_score(board) 
 
@@ -42,12 +40,23 @@ def get_move_score(board: Board, move: Move) -> int:
     - Nước đi không ăn quân, sắp xếp theo điểm số di chuyển tĩnh.
     """
     if move.promotion == QUEEN: return 2
+
     if board.is_capture(move): 
-        if board.is_en_passant(move): return 0
+        # Bắt tốt qua đường
+        if board.is_en_passant(move): 
+            if not board._attackers_mask(not board.turn, move.to_square, board.occupied): 
+                return PIECE_VALUES[0]
+            return 0
+        
+        # ăn quân bình thường
         if not board._attackers_mask(not board.turn, move.to_square, board.occupied): 
             return PIECE_VALUES[board.piece_type_at(move.to_square) - 1]
         return PIECE_VALUES[board.piece_type_at(move.to_square) - 1] - PIECE_VALUES[board.piece_type_at(move.from_square) - 1]
     return (-2 * PIECE_VALUES[KING - 1]) + get_move_static_score(board, move)
+
+def organize_moves(board: Board) -> list[Move]:
+    """ Sinh ra tất cả các nước đi hợp lệ và sắp xếp chúng theo thứ tự giảm dần của get_move_score() """
+    return sorted(board.generate_legal_moves(), key=lambda move: get_move_score(board, move), reverse=True)
 
 def get_move_score_qs(board: Board, move: Move) -> int:
     """
@@ -63,6 +72,14 @@ def get_move_score_qs(board: Board, move: Move) -> int:
     - Nước đi phong hậu
     """
     if move.promotion == QUEEN: return 2
+
+    # Bắt tốt qua đường
+    if board.is_en_passant(move):
+        if not board._attackers_mask(not board.turn, move.to_square, board.occupied): 
+            return PIECE_VALUES[0]
+        return 0
+    
+    # ăn quân bình thường
     if not board._attackers_mask(not board.turn, move.to_square, board.occupied): 
         return PIECE_VALUES[board.piece_type_at(move.to_square) - 1]
     return PIECE_VALUES[board.piece_type_at(move.to_square) - 1] - PIECE_VALUES[board.piece_type_at(move.from_square) - 1]
@@ -76,14 +93,11 @@ def organize_moves_quiescence(board: Board) -> list[Move]:
     - Nước đi ăn quân thắng
     - Nước đi phong hậu
     """
-    return sorted([move for move in chain(board.generate_legal_moves(to_mask = board.occupied_co[not board.turn]), 
+    return sorted([move for move in chain(board.generate_legal_moves(to_mask = board.occupied_co[not board.turn]),
+                                              board.generate_legal_ep(), 
                                               generate_legal_promotion_queen_non_capture(board))
                                               if get_move_score_qs(board, move) > 0], 
                    key=lambda move: get_move_score_qs(board, move), reverse=True)
-
-def organize_moves(board: Board) -> list[Move]:
-    """ Sinh ra tất cả các nước đi hợp lệ và sắp xếp chúng theo thứ tự giảm dần của get_move_score() """
-    return sorted(board.generate_legal_moves(), key=lambda move: get_move_score(board, move), reverse=True)
 
 def is_null_ok(board: Board) -> bool:
     """
@@ -95,8 +109,6 @@ def is_null_ok(board: Board) -> bool:
     - Bên di chuyển tồn tại những quân khác không phải tốt hoặc vua.
     """
     if board.is_check() or (board.peek == Move.null()): return False
-    for square in scan_reversed(board.occupied_co[board.turn]):
-        mask = BB_SQUARES[square]
-        if (not (board.pawns & mask)) and (not (board.kings & mask)):
-            return True
+    if board.occupied_co[board.turn] & (board.knights | board.bishops | board.rooks | board.queens):
+        return True
     return False
