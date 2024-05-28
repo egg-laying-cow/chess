@@ -1,6 +1,6 @@
 from chess import Board, Move, scan_reversed
 from chess.polyglot import open_reader
-from ._heuristic import END_GAME_SCORE, is_null_ok, organize_moves, organize_moves_quiescence, score
+from ._heuristic import END_GAME_SCORE, EGTABLEBASE, is_null_ok, organize_moves, organize_moves_quiescence, score
 
 OPENING_BOOK = open_reader("cow/data/opening_book/3210elo.bin")
 
@@ -112,11 +112,44 @@ def minimax(board : Board, depth: int, cache: dict, is_end_game: bool, alpha: fl
                 break
         cache[cache_key] = (best_move, min_eval)
         return (best_move, min_eval)
-
-def _get_best_move(board: Board, depth):
+    
+def get_best_move(board: Board, depth):
+    """Trả về nước đi tốt nhất"""
     # Tra sách khai cuộc
     try: return OPENING_BOOK.weighted_choice(board).move.uci()
     except:
-        # Tìm kiếm nước đi tốt nhất
-        move, _ = minimax(board, depth, {}, len(list(scan_reversed(board.occupied))) <= 5)
+        is_end_game = board.occupied.bit_count() <= 5
+
+        # Tìm nước đi tốt nhất ở Endgame tablebase khi số quân cờ <= 5
+        if is_end_game:
+            wdl = EGTABLEBASE.get_wdl(board, 0)
+            if wdl > 0:
+                # Nếu bên đang thắng không có quân tốt thì tìm nước đi tốt nhất.
+                if not (board.pawns & board.occupied_co[board.turn]):
+                    return _get_best_move(board)
+            elif wdl < 0:
+                # Nếu bên đang thắng không có quân tốt thì tìm nước đi tốt nhất.
+                if not (board.pawns & board.occupied_co[not board.turn]):
+                    return _get_best_move(board)
+
+        # Tìm kiếm nước đi tốt nhất bằng minimax
+        move, _ = minimax(board, depth, {}, is_end_game)
         return move.uci()
+    
+def _get_best_move(board: Board):
+    """
+    Tìm nước đi tốt nhất khi bàn cờ chỉ còn 3-4-5 quân cờ và bên đang thắng không có quân tốt.
+
+    Lý do cho việc này: syzygy chỉ hỗ trợ tính khoảng cách dtz 
+    (số nửa nước đi cần thiết để đặt được zeroing move, bao gồm ăn quân hoặc đi tốt.)
+    """
+    z = {}
+    for move in board.generate_legal_moves():
+        board.push(move)
+        z[move] = score(board, True)
+        board.pop()
+    return max(z, key=z.get).uci()
+
+def play(board: Board, depth: int = 4):
+    return get_best_move(board, depth)
+

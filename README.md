@@ -35,7 +35,7 @@ Sử dụng thêm các bảng cơ sở dữ liệu Syzygy 3-4-5 quân để hỗ
 Chạy main.py
 
 ## Yêu cầu:
-- Python
+- Python >= 3.10
 - Pygame
   
 Có sử dụng thư viện [python-chess](https://github.com/niklasf/python-chess) (đã tích hợp trong mã nguồn)

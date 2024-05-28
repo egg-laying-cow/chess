@@ -13,17 +13,36 @@ def score(board: Board, is_end_game: bool) -> float:
     """
     Hàm này trả về điểm số của trạng thái hiện tại của bàn cờ (tính cho bên vừa di chuyển).
 
-    Nếu số quân cờ trên bàn còn ít hơn 6 quân, hàm sẽ sử dụng dtz50 từ tablebase để hỗ trợ đánh giá.
+    Nếu số quân cờ trên bàn còn ít hơn 6 quân, sử dụng dtz từ tablebase để hỗ trợ đánh giá.
+
+    Ý tưởng:
+
+    (Trước tiên, tìm hiểu dtz và hàm get_dtz của thư viện python-chess)
+    
+    Điểm dược tính như sau:
+    Nếu dtz > 0 (bên vừa đi đang thắng):
+    - Điểm gốc: END_GAME_SCORE (điểm nhận được khi chiến thắng)
+    - Trừ (dtz * 1000): Nếu bên thắng không có tốt, phần này giúp tiến nhanh đến các nước ăn quân. 
+    (Cũng có thể hiểu là tiến nhanh tới chiến thắng)
+    - Trừ (END_GAME_SCORE / 10) nếu bên đang thắng còn quân tốt. Mục đích loại bỏ quân tốt sớm nhất có thể.
+    (Khi bên đang thắng có quân tốt, dtz luôn = 1 hoặc -2 tùy theo nước đi hiện tại của bên nào.)
+    - Trừ (END_GAME_SCORE / 200) * số quân cờ còn lại bên đang thua. 
+    - Điểm số đánh giá trạng thái tĩnh của bàn cờ / 10.
+    (rất nhỏ, dùng để chọn node tốt nhất khi các thông số trên bằng nhau giữa các node)
+    
+    Tương tự với dtz < 0.
     """
     if is_end_game:
         dtz = -EGTABLEBASE.get_dtz(board, 0)
         if dtz > 0: 
             return (END_GAME_SCORE - dtz * 1000 
-                    - ((board.pawns & board.occupied_co[not board.turn]) != 0) * END_GAME_SCORE / 10 
+                    - ((board.pawns & board.occupied_co[not board.turn]) != 0) * END_GAME_SCORE / 10
+                    - board.occupied_co[board.turn].bit_count() * END_GAME_SCORE / 200
                     + calculate_score(board) / 10)           
         if dtz < 0: 
             return (-END_GAME_SCORE - dtz * 1000 
-                    + ((board.pawns & board.occupied_co[board.turn]) != 0) * END_GAME_SCORE / 10 
+                    + ((board.pawns & board.occupied_co[board.turn]) != 0) * END_GAME_SCORE / 10
+                    + board.occupied_co[not board.turn].bit_count() * END_GAME_SCORE / 200 
                     + calculate_score(board) / 10)
     return calculate_score(board) 
 
