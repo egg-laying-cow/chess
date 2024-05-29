@@ -3,7 +3,7 @@ from chess.polyglot import open_reader
 from ._heuristic import END_GAME_SCORE, EGTABLEBASE, is_null_ok, organize_moves, organize_moves_quiescence, score
 
 OPENING_BOOK = open_reader("cow/data/opening_book/3210elo.bin")
-
+    
 def quiesecence(board : Board, depth: int, MAX_DEPTH: int, is_end_game: bool, alpha: float, beta: float, turn: int):
     # Kiểm tra kết thúc game.
     if (depth < MAX_DEPTH):
@@ -25,8 +25,8 @@ def quiesecence(board : Board, depth: int, MAX_DEPTH: int, is_end_game: bool, al
             board.push(move)
             eval = quiesecence(board, depth - 1, MAX_DEPTH, is_end_game, alpha, beta, -1)
             board.pop()
-            if eval > max_eval:
-                max_eval = eval
+
+            max_eval = max(max_eval, eval)
             alpha = max(alpha, eval)
             if beta <= alpha:
                 break
@@ -37,8 +37,8 @@ def quiesecence(board : Board, depth: int, MAX_DEPTH: int, is_end_game: bool, al
             board.push(move)
             eval = quiesecence(board, depth - 1, MAX_DEPTH, is_end_game, alpha, beta, 1)
             board.pop()
-            if eval < min_eval:
-                min_eval = eval
+
+            min_eval = min(min_eval, eval)
             beta = min(beta, eval)
             if beta <= alpha:
                 break
@@ -89,6 +89,7 @@ def minimax(board : Board, depth: int, cache: dict, is_end_game: bool, alpha: fl
             board.push(move)
             _, eval = minimax(board, depth - 1, cache, is_end_game, alpha, beta, -1)
             board.pop()
+
             if eval > max_eval:
                 max_eval = eval
                 best_move = move
@@ -104,6 +105,7 @@ def minimax(board : Board, depth: int, cache: dict, is_end_game: bool, alpha: fl
             board.push(move)
             _, eval = minimax(board, depth - 1, cache, is_end_game, alpha, beta, 1)
             board.pop()
+
             if eval < min_eval:
                 min_eval = eval
                 best_move = move
@@ -146,6 +148,11 @@ def _get_best_move(board: Board):
     z = {}
     for move in board.generate_legal_moves():
         board.push(move)
+
+        if board.is_checkmate():
+            board.pop()
+            return move.uci()
+        
         z[move] = score(board, True)
         board.pop()
     return max(z, key=z.get).uci()
