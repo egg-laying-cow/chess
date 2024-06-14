@@ -38,12 +38,12 @@ def score(board: Board, is_end_game: bool) -> float:
             return (END_GAME_SCORE - dtz * 1000 
                     - ((board.pawns & board.occupied_co[not board.turn]) != 0) * END_GAME_SCORE / 10
                     - board.occupied_co[board.turn].bit_count() * END_GAME_SCORE / 200
-                    + calculate_score(board) / 10)           
+                    + calculate_score(board) / 100)           
         if dtz < 0: 
             return (-END_GAME_SCORE - dtz * 1000 
                     + ((board.pawns & board.occupied_co[board.turn]) != 0) * END_GAME_SCORE / 10
                     + board.occupied_co[not board.turn].bit_count() * END_GAME_SCORE / 200 
-                    + calculate_score(board) / 10)
+                    + calculate_score(board) / 100)
     return calculate_score(board) 
 
 def get_move_score(board: Board, move: Move) -> int:
@@ -58,8 +58,6 @@ def get_move_score(board: Board, move: Move) -> int:
     - Nước đi ăn quân thua 
     - Nước đi không ăn quân, sắp xếp theo điểm số di chuyển tĩnh.
     """
-    if move.promotion == QUEEN: return 2
-
     if board.is_capture(move): 
         # Bắt tốt qua đường
         if board.is_en_passant(move): 
@@ -71,11 +69,14 @@ def get_move_score(board: Board, move: Move) -> int:
         if not board._attackers_mask(not board.turn, move.to_square, board.occupied): 
             return PIECE_VALUES[board.piece_type_at(move.to_square) - 1]
         return PIECE_VALUES[board.piece_type_at(move.to_square) - 1] - PIECE_VALUES[board.piece_type_at(move.from_square) - 1]
+    
+    if move.promotion == QUEEN: return 2
+    
     return (-2 * PIECE_VALUES[KING - 1]) + get_move_static_score(board, move)
 
 def organize_moves(board: Board) -> list[Move]:
     """ Sinh ra tất cả các nước đi hợp lệ và sắp xếp chúng theo thứ tự giảm dần của get_move_score() """
-    return sorted(board.generate_legal_moves(), key=lambda move: get_move_score(board, move), reverse=True)
+    return sorted(list(board.generate_legal_moves()), key=lambda move: get_move_score(board, move), reverse=True)
 
 def get_move_score_qs(board: Board, move: Move) -> int:
     """
@@ -90,7 +91,7 @@ def get_move_score_qs(board: Board, move: Move) -> int:
     - Nước đi ăn quân thắng
     - Nước đi phong hậu
     """
-    if move.promotion == QUEEN: return 2
+    if move.promotion == QUEEN and (not board.is_capture(move)): return 2
 
     # Bắt tốt qua đường
     if board.is_en_passant(move):
